@@ -46,6 +46,12 @@ export default function Home() {
   async function handleHumanize() {
     if (!text.trim()) return;
 
+    if (wordCount < 50) {
+    setResult("Please enter at least 50 words to humanize your text.");
+    setAnalysis(null);
+    return;
+  }
+
     setResult("Humanizing...");
     setAnalysis(null);
 
@@ -144,9 +150,17 @@ const scoreLabel =
             />
 
             <div className="flex items-center justify-between border-t border-zinc-200 px-6 py-4">
-              <span className="text-sm text-zinc-400">
-                {wordCount.toLocaleString()} / 1,000 words
-              </span>
+  <div className="flex flex-col gap-1">
+    <span className="text-sm text-zinc-400">
+      {wordCount.toLocaleString()} / 1,000 words
+    </span>
+
+    {wordCount > 0 && wordCount < 50 && (
+      <span className="text-xs text-zinc-400">
+        Minimum 50 words
+      </span>
+    )}
+  </div>
 
               <button
                 onClick={() => {
@@ -187,7 +201,7 @@ const scoreLabel =
           {/* Button */}
           <button
             onClick={handleHumanize}
-            disabled={!text.trim()}
+            disabled={!text.trim() || wordCount < 50}
             className="mt-6 w-full rounded-2xl bg-zinc-900 py-4 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             ✨ Humanize
