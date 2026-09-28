@@ -104,7 +104,7 @@ const scoreLabel =
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-5 md:px-12">
         <div className="text-xl font-semibold tracking-tight">
-          Humanly<span className="text-zinc-400">.</span>
+          Wr1teHub<span className="text-zinc-400">.</span>
         </div>
 
         <div className="text-sm text-zinc-500">
@@ -223,11 +223,11 @@ const scoreLabel =
 
                   <div className="mb-8">
                     <h2 className="text-xl font-semibold">
-                      Writing Analysis
+                      General Writing Analysis
                     </h2>
 
                     <p className="mt-1 text-sm text-zinc-500">
-                      Overall writing score
+                      A closer look at your writing style, clarity, and overall readability.
                     </p>
                   </div>
 
@@ -270,8 +270,9 @@ const scoreLabel =
                           {score}%
                         </span>
 
-                        <span className="text-xs text-zinc-500">
-                          human score
+                        <span className="text-[11px] leading-tight text-center text-zinc-500">
+                          Overall<br />
+                          Writing Score
                         </span>
                       </div>
 
