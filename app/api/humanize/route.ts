@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createClient } from "@/utils/supabase/server";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,13 +12,222 @@ export async function POST(req: Request) {
     const text = body.text;
     const style = body.style || "Natural";
     const writingSample = body.writingSample || "";
+    const mode = body.mode || "humanize";
 
     if (!text || !text.trim()) {
+  return Response.json(
+    { error: "Please provide some text." },
+    { status: 400 }
+  );
+}
+
+if (mode === "humanize") {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json(
+      { error: "Please log in to humanize text." },
+      { status: 401 }
+    );
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    return Response.json(
+      { error: profileError.message },
+      { status: 500 }
+    );
+  }
+
+  if (profile.plan === "free") {
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: usage, error: usageError } = await supabase
+      .from("daily_usage")
+      .select("words_used")
+      .eq("user_id", user.id)
+      .eq("usage_date", today)
+      .maybeSingle();
+
+    if (usageError) {
       return Response.json(
-        { error: "Please provide some text." },
-        { status: 400 }
+        { error: usageError.message },
+        { status: 500 }
       );
     }
+
+    const wordsUsed = usage?.words_used ?? 0;
+    const wordsRemaining = Math.max(1000 - wordsUsed, 0);
+
+    if (wordCount > wordsRemaining) {
+      return Response.json(
+        {
+          error: `You have ${wordsRemaining} words remaining today.`,
+        },
+        { status: 403 }
+      );
+    }
+  }
+}
+
+if (mode === "detect") {
+  const detectionResponse = await openai.responses.create({
+    model: "gpt-5.6-luna",
+    instructions: `
+Analyze the following text for writing patterns that are commonly associated
+with AI-generated or highly formulaic writing.
+
+This is a writing-pattern analysis, not a definitive determination of authorship.
+
+Do NOT claim that the text was written by AI.
+Do NOT claim that the text was written by a human.
+Do NOT estimate the probability that AI wrote the text.
+Do NOT reference external AI detectors.
+Do NOT claim that any single characteristic proves AI authorship.
+
+Instead, evaluate the writing itself.
+
+Analyze these characteristics:
+
+1. sentenceStructure
+Look at how repetitive or predictable the sentence structures are.
+A higher score means the structures appear more varied and natural.
+
+2. repetition
+Look for unnecessary repetition of words, phrases, ideas, or sentence patterns.
+A higher score means less unnecessary repetition.
+
+3. genericPhrasing
+Look for vague, formulaic, generic, or context-independent language.
+A higher score means the language is more specific and less formulaic.
+
+4. naturalFlow
+Evaluate how naturally ideas connect from one sentence to another.
+A higher score means the writing flows more naturally.
+
+5. personalVoice
+Evaluate how much the writing has an individual, context-specific voice.
+Do not assume that first-person writing automatically means a stronger voice.
+
+6. concreteLanguage
+Evaluate whether the writing uses concrete actions, people, objects,
+examples, experiences, or specific details rather than unnecessary abstraction.
+A higher score means more concrete language.
+
+7. vocabularySimplicity
+Evaluate how direct and familiar the vocabulary is while preserving accuracy.
+Do not penalize necessary technical terminology.
+
+8. formality
+Evaluate whether the level of formality is appropriate for the context.
+A lower score may indicate writing that is unnecessarily formal or
+unnecessarily casual.
+
+9. sentenceRhythm
+Evaluate whether sentence lengths and structures create natural variation.
+A higher score means more natural variation.
+
+Use a 0-100 scale for every category.
+
+Important:
+- These are indicators of writing characteristics.
+- They are NOT proof of AI authorship.
+- A high or low score does not establish who wrote the text.
+- Base the analysis only on the text provided.
+- Do not give every category the same score unless the text genuinely supports it.
+
+Return ONLY valid JSON in exactly this structure:
+
+{
+  "sentenceStructure": 0,
+  "repetition": 0,
+  "genericPhrasing": 0,
+  "naturalFlow": 0,
+  "personalVoice": 0,
+  "concreteLanguage": 0,
+  "vocabularySimplicity": 0,
+  "formality": 0,
+  "sentenceRhythm": 0
+}
+`,
+    input: text,
+    reasoning: {
+      effort: "none",
+    },
+  });
+
+  let detection;
+
+  try {
+    detection = JSON.parse(detectionResponse.output_text);
+  } catch {
+    detection = {
+      sentenceStructure: 0,
+      repetition: 0,
+      genericPhrasing: 0,
+      naturalFlow: 0,
+      personalVoice: 0,
+      concreteLanguage: 0,
+      vocabularySimplicity: 0,
+      formality: 0,
+      sentenceRhythm: 0,
+    };
+  }
+
+  const scores = [
+      detection.sentenceStructure,
+      detection.repetition,
+      detection.genericPhrasing,
+      detection.naturalFlow,
+      detection.personalVoice,
+      detection.concreteLanguage,
+      detection.vocabularySimplicity,
+      detection.formality,
+      detection.sentenceRhythm,
+  ];
+
+// Use the two strongest naturalness indicators.
+// This keeps the overall score focused on the strongest
+// writing characteristics rather than allowing one weak
+// indicator to dominate the result.
+
+const sortedScores = [...scores].sort((a, b) => b - a);
+
+const topTwoScores = sortedScores.slice(0, 2);
+
+const averageTopTwo = Math.round(
+  topTwoScores.reduce((sum, score) => sum + score, 0) /
+    topTwoScores.length
+);
+
+const overallScore = 100 - averageTopTwo;
+
+return Response.json({
+  result: text,
+  analysis: {
+    overallScore,
+    sentenceStructure: detection.sentenceStructure,
+    repetition: detection.repetition,
+    genericPhrasing: detection.genericPhrasing,
+    naturalFlow: detection.naturalFlow,
+    personalVoice: detection.personalVoice,
+    concreteLanguage: detection.concreteLanguage,
+    vocabularySimplicity: detection.vocabularySimplicity,
+    formality: detection.formality,
+    sentenceRhythm: detection.sentenceRhythm,
+  },
+});
+}
 
 const instructions = `
 Rewrite the user's text so that it is clear, natural, direct, readable,
@@ -54,16 +264,50 @@ rebuild the sentence around the same idea.
 Prefer natural communication over mechanical paraphrasing.
 
 The rewritten version should preserve the original information while
-changing the way that information is expressed.
+meaningfully improving the way that information is expressed.
 
-When a sentence contains several separate ideas, consider restructuring it
-so that each idea is easier to understand.
+Do not limit the rewrite to synonym replacement or light proofreading.
 
-When two ideas naturally belong together, keep them together.
+When the original wording feels generic, repetitive, stiff, overly formal,
+predictable, abstract, or unnecessarily polished, rebuild the sentence
+rather than simply changing individual words.
 
-Do not restructure the text merely for the sake of changing it.
+Meaningful rewriting may include:
 
-Every change should have a reason.
+- changing sentence structure
+- combining or separating sentences
+- changing sentence openings
+- moving clauses when the meaning remains unchanged
+- replacing noun-heavy constructions with clearer verbs
+- simplifying unnecessarily formal wording
+- removing unnecessary transitions
+- changing repetitive phrasing
+- varying sentence length
+- changing the order in which closely related ideas are presented
+- replacing generic expressions with clearer wording
+- making explanations more direct
+- making the rhythm less uniform
+- allowing the writing to sound more like a real person communicating an idea
+
+The goal is not to make every sentence look different.
+
+The goal is to make the writing feel naturally written rather than lightly
+paraphrased.
+
+A strong rewrite may look noticeably different from the original while
+still communicating the same ideas, facts, argument, and level of certainty.
+
+Before returning the result, compare the rewrite with the original and ask:
+
+"Does this feel like a genuine rewrite, or did I mostly replace a few words?"
+
+If it feels like only a light paraphrase, reconsider the sentence structure
+and rewrite it more naturally.
+
+Every change must still have a clear purpose.
+
+Never change information simply to make the text different.
+
 
 ==================================================
 1. NATURAL AND DIRECT LANGUAGE
@@ -1114,6 +1358,40 @@ const scores = [
 const humanWritingScore = Math.round(
   scores.reduce((sum, score) => sum + score, 0) / scores.length
 );
+
+const supabase = await createClient();
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (user) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.plan === "free") {
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+    const { error: usageError } = await supabase.rpc(
+      "add_word_usage",
+      {
+        p_word_count: wordCount,
+      }
+    );
+
+    if (usageError) {
+      console.error("Usage tracking error:", usageError);
+
+      return Response.json(
+        { error: "Could not update your daily word usage." },
+        { status: 500 }
+      );
+    }
+  }
+}
 
 return Response.json({
   result: response.output_text,
