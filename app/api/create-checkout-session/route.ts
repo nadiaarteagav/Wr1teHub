@@ -7,6 +7,13 @@ export async function POST(request: Request) {
   try {
     const { userId } = await request.json();
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required." },
+        { status: 400 }
+      );
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
 
@@ -22,6 +29,12 @@ export async function POST(request: Request) {
 
       metadata: {
         userId,
+      },
+
+      subscription_data: {
+        metadata: {
+          userId,
+        },
       },
     });
 
