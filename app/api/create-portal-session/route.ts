@@ -20,23 +20,15 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!user.email) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile?.stripe_customer_id) {
       return NextResponse.json(
-        { error: "No email found for this account." },
-        { status: 400 }
-      );
-    }
-
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1,
-    });
-
-    const customer = customers.data[0];
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "No Stripe customer found." },
+        { error: "No Stripe customer found for this account." },
         { status: 404 }
       );
     }
@@ -45,7 +37,7 @@ export async function POST(request: Request) {
       request.headers.get("origin") || "https://wr1tehub.com";
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: customer.id,
+      customer: profile.stripe_customer_id,
       return_url: origin,
     });
 
