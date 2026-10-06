@@ -52,6 +52,26 @@ export default function Home() {
 const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 const [showUsageModal, setShowUsageModal] = useState(false);
 const [showAccountModal, setShowAccountModal] = useState(false);
+const handleManageSubscription = async () => {
+  try {
+    const response = await fetch("/api/create-portal-session", {
+      method: "POST",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.url) {
+      throw new Error(
+        data.error || "Unable to open subscription management."
+      );
+    }
+
+    window.location.href = data.url;
+  } catch (error) {
+    console.error("Subscription management error:", error);
+    alert("Unable to open subscription management.");
+  }
+};
 
   const wordCount = text.trim()
     ? text.trim().split(/\s+/).length
@@ -788,6 +808,14 @@ if (mode === "humanize") {
           </span>
         </div>
       </div>
+            {plan === "pro" && (
+        <button
+          onClick={handleManageSubscription}
+          className="mt-4 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+        >
+          Manage Subscription
+        </button>
+      )}
 
       {plan === "free" && (
         <button
@@ -875,10 +903,6 @@ if (mode === "humanize") {
         <p className="mt-6 text-center text-sm text-zinc-400">
           Free to use. No credit card required.
         </p>
-
-<p className="mt-6 text-center text-sm text-zinc-400">
-  Free to use. No credit card required.
-</p>
 
 <footer className="mt-10 pb-6 text-center text-sm text-zinc-400">
   <div className="flex justify-center gap-5 flex-wrap">

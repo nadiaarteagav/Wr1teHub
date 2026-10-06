@@ -13,6 +13,13 @@ export async function POST(req: Request) {
     const style = body.style || "Natural";
     const writingSample = body.writingSample || "";
     const mode = body.mode || "humanize";
+    
+    if (mode !== "humanize" && mode !== "detect") {
+  return Response.json(
+    { error: "Invalid mode." },
+    { status: 400 }
+  );
+}
 
     if (!text || !text.trim()) {
   return Response.json(
