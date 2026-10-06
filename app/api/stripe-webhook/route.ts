@@ -23,12 +23,9 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
 
-    // ----------------------------------------
     // SUBSCRIPTION CREATED / CHECKOUT COMPLETED
-    // ----------------------------------------
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-
       const userId = session.metadata?.userId;
 
       if (userId) {
@@ -49,12 +46,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // ----------------------------------------
     // SUBSCRIPTION UPDATED
-    // ----------------------------------------
     if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
-
       const userId = subscription.metadata?.userId;
 
       if (userId) {
@@ -86,18 +80,38 @@ export async function POST(request: Request) {
       }
     }
 
-    // ----------------------------------------
-    // SUBSCRIPTION DELETED / ENDED
-    // ----------------------------------------
+    // SUBSCRIPTION DELETED
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
-
       const userId = subscription.metadata?.userId;
 
       if (userId) {
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id;
+
+        let hasAnotherActiveSubscription = false;
+
+        if (customerId) {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: "all",
+            limit: 100,
+          });
+
+          hasAnotherActiveSubscription = subscriptions.data.some(
+            (otherSubscription) =>
+              otherSubscription.id !== subscription.id &&
+              ["active", "trialing"].includes(otherSubscription.status)
+          );
+        }
+
+        const plan = hasAnotherActiveSubscription ? "pro" : "free";
+
         const { error } = await supabase
           .from("profiles")
-          .update({ plan: "free" })
+          .update({ plan })
           .eq("id", userId);
 
         if (error) {
@@ -111,7 +125,9 @@ export async function POST(request: Request) {
           });
         }
 
-        console.log(`User ${userId} downgraded to Free.`);
+        console.log(
+          `User ${userId} subscription deleted. Other active subscription: ${hasAnotherActiveSubscription}. Plan: ${plan}`
+        );
       }
     }
 
