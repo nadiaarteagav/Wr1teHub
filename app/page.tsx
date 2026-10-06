@@ -616,7 +616,11 @@ if (mode === "humanize") {
                     <AnalysisItem
                       label="Sentence Rhythm"
                       value={analysis.sentenceRhythm}
-                    />
+                    /><p className="mt-6 text-center text-sm text-zinc-400">
+  Free to use. No credit card required.
+</p>
+
+
 
                   </div>
 
@@ -871,6 +875,30 @@ if (mode === "humanize") {
         <p className="mt-6 text-center text-sm text-zinc-400">
           Free to use. No credit card required.
         </p>
+
+<p className="mt-6 text-center text-sm text-zinc-400">
+  Free to use. No credit card required.
+</p>
+
+<footer className="mt-10 pb-6 text-center text-sm text-zinc-400">
+  <div className="flex justify-center gap-5 flex-wrap">
+    <a href="/terms" className="hover:text-zinc-900 transition">
+      Terms of Service
+    </a>
+
+    <a href="/privacy" className="hover:text-zinc-900 transition">
+      Privacy Policy
+    </a>
+
+    <a href="/refund-policy" className="hover:text-zinc-900 transition">
+      Refund & Cancellation Policy
+    </a>
+  </div>
+
+  <p className="mt-3">
+    © 2026 Wr1teHub. All rights reserved.
+  </p>
+</footer>
 
 </main>
 );
