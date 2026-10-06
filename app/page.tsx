@@ -39,6 +39,7 @@ export default function Home() {
 
   const [user, setUser] = useState<any>(null);
   const [wordsUsed, setWordsUsed] = useState(0);
+  const [plan, setPlan] = useState("free");
   const isAnonymous = user?.is_anonymous === true;
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -49,6 +50,8 @@ export default function Home() {
   const [mode, setMode] = useState<"humanize" | "detect">("humanize");
   const [isLoading, setIsLoading] = useState(false);
 const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+const [showUsageModal, setShowUsageModal] = useState(false);
+const [showAccountModal, setShowAccountModal] = useState(false);
 
   const wordCount = text.trim()
     ? text.trim().split(/\s+/).length
@@ -63,9 +66,9 @@ async function loadUsage() {
       return;
     }
 
-    const data = await response.json();
-
-    setWordsUsed(data.wordsUsed ?? 0);
+const data = await response.json();
+setWordsUsed(data.wordsUsed ?? 0);
+setPlan(data.plan ?? "free");
   } catch (error) {
     console.error("Usage error:", error);
   }
@@ -232,14 +235,19 @@ if (mode === "humanize") {
 
         <div className="my-2 border-t border-zinc-100" />
 
-        <button
-          className="w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition hover:bg-zinc-100"
-        >
-          Account
-        </button>
+<button
+  onClick={() => {
+    setShowAccountModal(true);
+    setShowUserMenu(false);
+  }}
+  className="w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition hover:bg-zinc-100"
+>
+  Account
+</button>
 
         <button
           className="w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition hover:bg-zinc-100"
+          onClick={() => setShowUsageModal(true)}
         >
           Usage
         </button>
@@ -622,85 +630,155 @@ if (mode === "humanize") {
 
         </div>
         {/* Upgrade Modal */}
-        {showUpgradeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+{/* Usage Modal */}
+{showUsageModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
 
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold text-zinc-900">
-                  You've reached your daily limit
-                </h2>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-900">
+            Your Usage
+          </h2>
 
-                <p className="mt-3 text-sm leading-6 text-zinc-500">
-                  You've used all 1,000 free words for today.
-                  <br />
-                  Upgrade to Pro to continue using Wr1teHub.
-                </p>
-              </div>
+          <p className="mt-1 text-sm text-zinc-500">
+            {plan === "pro" ? "Wr1teHub Pro" : "Free Plan"}
+          </p>
+        </div>
 
-              <div className="mt-6 rounded-2xl bg-zinc-50 p-5 text-center">
-                <p className="text-sm font-medium text-zinc-900">
-                  Wr1teHub Pro
-                </p>
+        <button
+          onClick={() => setShowUsageModal(false)}
+          className="text-2xl leading-none text-zinc-400 transition hover:text-zinc-900"
+        >
+          ×
+        </button>
+      </div>
 
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">
-                  $9.99
-                  <span className="text-sm font-normal text-zinc-500">
-                    {" "} / month
-                  </span>
-                </p>
+      <div className="mt-8 rounded-2xl bg-zinc-50 p-6">
 
-                <p className="mt-2 text-sm text-zinc-500">
-                  50,000 words per month
-                </p>
-              </div>
+        {plan === "pro" ? (
+          <>
+            <p className="text-sm text-zinc-500">
+              Monthly limit
+            </p>
 
-<button
-  onClick={async () => {
-    try {
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-        }),
-      });
+            <p className="mt-2 text-3xl font-semibold text-zinc-900">
+              50,000 words
+            </p>
 
-      const data = await response.json();
+            <p className="mt-2 text-sm text-zinc-500">
+              per month
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-zinc-500">
+              Daily usage
+            </p>
 
-      if (!response.ok) {
-        console.error(data.error);
-        return;
-      }
+            <p className="mt-2 text-3xl font-semibold text-zinc-900">
+              {wordsUsed.toLocaleString()} / 1,000
+            </p>
 
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-    }
-  }}
-  className="mt-6 w-full rounded-2xl bg-zinc-900 py-4 text-sm font-medium text-white transition hover:bg-zinc-700"
->
-  Upgrade to Pro
-</button>
-
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="mt-3 w-full py-2 text-sm text-zinc-400 transition hover:text-zinc-900"
-              >
-                Maybe later
-              </button>
-
-              <p className="mt-4 text-center text-xs text-zinc-400">
-                Your free limit resets tomorrow.
-              </p>
-
-            </div>
-          </div>
+            <p className="mt-2 text-sm text-zinc-500">
+              {Math.max(1000 - wordsUsed, 0).toLocaleString()} words remaining today
+            </p>
+          </>
         )}
+
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-zinc-200 p-5">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-600">
+            AI Detector
+          </span>
+
+          <span className="text-sm font-medium text-zinc-900">
+            Unlimited
+          </span>
+        </div>
+      </div>
+
+      {plan === "free" && (
+        <button
+          onClick={() => {
+            setShowUsageModal(false);
+            setShowUpgradeModal(true);
+          }}
+          className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+        >
+          Upgrade to Pro
+        </button>
+      )}
+
+    </div>
+  </div>
+)}
+
+{/* Account Modal */}
+{showAccountModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-900">
+            Account
+          </h2>
+
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage your Wr1teHub account
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowAccountModal(false)}
+          className="text-2xl leading-none text-zinc-400 transition hover:text-zinc-900"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="mt-8 space-y-4">
+
+        <div className="rounded-2xl bg-zinc-50 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            Email
+          </p>
+
+          <p className="mt-2 text-sm text-zinc-900">
+            {user?.email}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-zinc-50 p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            Plan
+          </p>
+
+          <p className="mt-2 text-sm font-medium text-zinc-900">
+            {plan === "pro" ? "Wr1teHub Pro" : "Free Plan"}
+          </p>
+        </div>
+
+      </div>
+
+      {plan === "free" && (
+        <button
+          onClick={() => {
+            setShowAccountModal(false);
+            setShowUpgradeModal(true);
+          }}
+          className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+        >
+          Upgrade to Pro
+        </button>
+      )}
+
+    </div>
+  </div>
+)}
 
         {/* Bottom text */}
         <p className="mt-6 text-center text-sm text-zinc-400"></p>
