@@ -48,7 +48,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [mode, setMode] = useState<"humanize" | "detect">("humanize");
   const [isLoading, setIsLoading] = useState(false);
-const [showUpgradeModal, setShowUpgradeModal] = useState(true);
+const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const wordCount = text.trim()
     ? text.trim().split(/\s+/).length
