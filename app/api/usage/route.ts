@@ -30,14 +30,43 @@ export async function GET() {
     );
   }
 
-  if (profile.plan === "pro") {
-    return NextResponse.json({
-      plan: "pro",
-      wordsUsed: 0,
-      wordsRemaining: null,
-      dailyLimit: null,
-    });
+if (profile.plan === "pro") {
+  const monthStart = new Date(
+    Date.UTC(
+      new Date().getUTCFullYear(),
+      new Date().getUTCMonth(),
+      1
+    )
+  )
+    .toISOString()
+    .split("T")[0];
+
+  const { data: monthlyUsage, error: monthlyUsageError } =
+    await supabase
+      .from("monthly_usage")
+      .select("words_used")
+      .eq("user_id", user.id)
+      .eq("usage_month", monthStart)
+      .maybeSingle();
+
+  if (monthlyUsageError) {
+    return NextResponse.json(
+      { error: monthlyUsageError.message },
+      { status: 500 }
+    );
   }
+
+  const wordsUsed = monthlyUsage?.words_used ?? 0;
+  const wordsRemaining = Math.max(50000 - wordsUsed, 0);
+
+  return NextResponse.json({
+    plan: "pro",
+    wordsUsed,
+    wordsRemaining,
+    dailyLimit: null,
+    monthlyLimit: 50000,
+  });
+}
 
   const today = new Date().toISOString().split("T")[0];
 

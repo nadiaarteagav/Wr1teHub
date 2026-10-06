@@ -1,15 +1,31 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await request.json();
+    // Get the currently authenticated Supabase user
+    const supabase = await createClient();
 
-    if (!userId) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
-        { error: "User ID is required." },
+        { error: "You must be logged in to subscribe." },
+        { status: 401 }
+      );
+    }
+
+    const origin = request.headers.get("origin");
+
+    if (!origin) {
+      return NextResponse.json(
+        { error: "Unable to determine website origin." },
         { status: 400 }
       );
     }
@@ -24,16 +40,16 @@ export async function POST(request: Request) {
         },
       ],
 
-      success_url: `${request.headers.get("origin")}/?checkout=success`,
-      cancel_url: `${request.headers.get("origin")}/?checkout=cancelled`,
+      success_url: `${origin}/?checkout=success`,
+      cancel_url: `${origin}/?checkout=cancelled`,
 
       metadata: {
-        userId,
+        userId: user.id,
       },
 
       subscription_data: {
         metadata: {
-          userId,
+          userId: user.id,
         },
       },
     });

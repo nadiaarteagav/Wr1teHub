@@ -366,17 +366,9 @@ if (mode === "humanize") {
 <div className="flex items-center justify-between border-t border-zinc-200 px-6 py-4">
   <div className="flex items-center gap-4">
     <span className="text-sm text-zinc-400">
-      {wordCount.toLocaleString()} / 1,000 words
+      {wordCount.toLocaleString()} /{" "}
+      {plan === "pro" ? "50,000" : "1,000"} words
     </span>
-
-    {mode === "humanize" && (
-      <span className="text-xs text-zinc-400">
-        Daily usage:{" "}
-        <span className="text-zinc-500">
-          {Math.max(1000 - wordsUsed, 0).toLocaleString()} remaining
-        </span>
-      </span>
-    )}
 
     {wordCount > 0 && wordCount < 50 && (
       <span className="text-xs text-zinc-400">
@@ -384,6 +376,21 @@ if (mode === "humanize") {
       </span>
     )}
   </div>
+
+  {mode === "humanize" && (
+    <span className="text-sm text-zinc-400">
+      {plan === "pro"
+        ? `Monthly usage: ${Math.max(
+            50000 - wordsUsed,
+            0
+          ).toLocaleString()} remaining`
+        : `Daily usage: ${Math.max(
+            1000 - wordsUsed,
+            0
+          ).toLocaleString()} remaining`}
+    </span>
+  )}
+</div>
 
   <button
     onClick={() => {
@@ -628,7 +635,85 @@ if (mode === "humanize") {
             </>
           )}
 
+        </section>
+        
+        {/* Upgrade Modal */}
+{showUpgradeModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+      
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-900">
+            Upgrade to Pro
+          </h2>
+
+          <p className="mt-1 text-sm text-zinc-500">
+            Get more words and unlock the full Wr1teHub experience.
+          </p>
         </div>
+
+        <button
+          onClick={() => setShowUpgradeModal(false)}
+          className="text-2xl leading-none text-zinc-400 transition hover:text-zinc-900"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="mt-8 rounded-2xl bg-zinc-50 p-6">
+        <p className="text-sm text-zinc-500">
+          Wr1teHub Pro
+        </p>
+
+        <p className="mt-2 text-3xl font-semibold text-zinc-900">
+          $9.99
+          <span className="text-base font-normal text-zinc-500">
+            {" "}
+            / month
+          </span>
+        </p>
+
+        <ul className="mt-5 space-y-3 text-sm text-zinc-600">
+          <li>✓ 50,000 words per month</li>
+          <li>✓ Unlimited AI Detector</li>
+          <li>✓ Cancel anytime</li>
+        </ul>
+      </div>
+
+      <button
+        onClick={async () => {
+          try {
+            const response = await fetch(
+              "/api/create-checkout-session",
+              {
+                method: "POST",
+              }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.url) {
+              throw new Error(
+                data.error || "Unable to start checkout."
+              );
+            }
+
+            window.location.href = data.url;
+          } catch (error) {
+            console.error("Checkout error:", error);
+            alert("Unable to start checkout. Please try again.");
+          }
+        }}
+        className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+      >
+        Continue to Checkout
+      </button>
+
+    </div>
+  </div>
+)}
+
         {/* Upgrade Modal */}
 {/* Usage Modal */}
 {showUsageModal && (
@@ -787,7 +872,6 @@ if (mode === "humanize") {
           Free to use. No credit card required.
         </p>
 
-      </section>
-    </main>
-  );
+</main>
+);
 }

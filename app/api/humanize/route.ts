@@ -48,8 +48,9 @@ if (mode === "humanize") {
     );
   }
 
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
   if (profile.plan === "free") {
-    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
     const today = new Date().toISOString().split("T")[0];
 
     const { data: usage, error: usageError } = await supabase
@@ -73,6 +74,46 @@ if (mode === "humanize") {
       return Response.json(
         {
           error: `You have ${wordsRemaining} words remaining today.`,
+        },
+        { status: 403 }
+      );
+    }
+  }
+
+  if (profile.plan === "pro") {
+    const now = new Date();
+
+    const monthStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    )
+      .toISOString()
+      .split("T")[0];
+
+    const { data: monthlyUsage, error: monthlyUsageError } =
+      await supabase
+        .from("monthly_usage")
+        .select("words_used")
+        .eq("user_id", user.id)
+        .eq("usage_month", monthStart)
+        .maybeSingle();
+
+    if (monthlyUsageError) {
+      return Response.json(
+        { error: monthlyUsageError.message },
+        { status: 500 }
+      );
+    }
+
+    const monthlyWordsUsed = monthlyUsage?.words_used ?? 0;
+    const monthlyWordsRemaining = Math.max(
+      50000 - monthlyWordsUsed,
+      0
+    );
+
+    if (wordCount > monthlyWordsRemaining) {
+      return Response.json(
+        {
+          error: `You have ${monthlyWordsRemaining} words remaining this month.`,
         },
         { status: 403 }
       );
@@ -1372,25 +1413,45 @@ if (user) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.plan === "free") {
-    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+if (profile?.plan === "free") {
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
 
-    const { error: usageError } = await supabase.rpc(
-      "add_word_usage",
-      {
-        p_word_count: wordCount,
-      }
-    );
-
-    if (usageError) {
-      console.error("Usage tracking error:", usageError);
-
-      return Response.json(
-        { error: "Could not update your daily word usage." },
-        { status: 500 }
-      );
+  const { error: usageError } = await supabase.rpc(
+    "add_word_usage",
+    {
+      p_word_count: wordCount,
     }
+  );
+
+  if (usageError) {
+    console.error("Usage tracking error:", usageError);
+
+    return Response.json(
+      { error: "Could not update your daily word usage." },
+      { status: 500 }
+    );
   }
+}
+
+if (profile?.plan === "pro") {
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+  const { error: usageError } = await supabase.rpc(
+    "add_monthly_word_usage",
+    {
+      p_word_count: wordCount,
+    }
+  );
+
+  if (usageError) {
+    console.error("Monthly usage tracking error:", usageError);
+
+    return Response.json(
+      { error: "Could not update your monthly word usage." },
+      { status: 500 }
+    );
+  }
+}
 }
 
 return Response.json({
