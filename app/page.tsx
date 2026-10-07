@@ -311,7 +311,7 @@ if (mode === "humanize") {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 pb-16 pt-16 text-center md:px-12 md:pt-24">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          AI writing, made natural
+          AI humanizer & AI detector
         </p>
 
         <h1 className="mx-auto max-w-3xl text-5xl font-semibold tracking-[-0.04em] md:text-7xl">
