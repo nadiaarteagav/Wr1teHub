@@ -385,10 +385,16 @@ if (mode === "humanize") {
 
 <div className="flex items-center justify-between border-t border-zinc-200 px-6 py-4">
   <div className="flex items-center gap-4">
-    <span className="text-sm text-zinc-400">
-      {wordCount.toLocaleString()} /{" "}
-      {plan === "pro" ? "50,000" : "1,000"} words
-    </span>
+{mode === "humanize" ? (
+  <span className="text-sm text-zinc-400">
+    {wordCount.toLocaleString()} /{" "}
+    {plan === "pro" ? "50,000" : "1,000"} words
+  </span>
+) : (
+  <span className="text-sm text-zinc-400">
+    Unlimited
+  </span>
+)}
 
     {wordCount > 0 && wordCount < 50 && (
       <span className="text-xs text-zinc-400">
@@ -418,7 +424,7 @@ if (mode === "humanize") {
       setResult("");
       setAnalysis(null);
     }}
-    className="text-sm text-zinc-400 transition hover:text-zinc-900"
+    className="ml-6 -mt-1 text-sm text-zinc-400 transition hover:text-zinc-900"
   >
     Clear
   </button>

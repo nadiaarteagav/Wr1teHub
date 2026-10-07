@@ -9,22 +9,29 @@ export default function AuthPage() {
   const supabase = createClient();
 
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!email || !password) {
-      setMessage("Please enter your email and password.");
+    if (!email) {
+      setMessage("Please enter your email.");
       return;
     }
 
-    if (!isLogin && !name.trim()) {
+    if (!isForgotPassword && !password) {
+      setMessage("Please enter your password.");
+      return;
+    }
+
+    if (!isLogin && !isForgotPassword && !name.trim()) {
       setMessage("Please enter your name.");
       return;
     }
@@ -32,6 +39,25 @@ export default function AuthPage() {
     setIsLoading(true);
     setMessage("");
 
+    // Forgot password
+    if (isForgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage(
+          "Check your email for a password reset link."
+        );
+      }
+
+      setIsLoading(false);
+      return;
+    }
+
+    // Login
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -46,7 +72,10 @@ export default function AuthPage() {
 
       router.push("/");
       router.refresh();
-    } else {
+    }
+
+    // Sign up
+    else {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -79,6 +108,7 @@ export default function AuthPage() {
   return (
     <main className="min-h-screen bg-white text-zinc-900 flex items-center justify-center px-6">
       <div className="w-full max-w-md">
+
         <div className="text-center mb-8">
           <button
             onClick={() => router.push("/")}
@@ -88,18 +118,25 @@ export default function AuthPage() {
           </button>
 
           <h1 className="mt-8 text-3xl font-semibold">
-            {isLogin ? "Welcome back" : "Create your account"}
+            {isForgotPassword
+              ? "Reset your password"
+              : isLogin
+              ? "Welcome back"
+              : "Create your account"}
           </h1>
 
           <p className="mt-2 text-zinc-500">
-            {isLogin
+            {isForgotPassword
+              ? "Enter your email and we'll send you a password reset link."
+              : isLogin
               ? "Log in to continue to Wr1teHub."
               : "Create an account to get started."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+
+          {!isLogin && !isForgotPassword && (
             <div>
               <label className="block text-sm font-medium mb-2">
                 Name
@@ -129,19 +166,36 @@ export default function AuthPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Password
-            </label>
+          {!isForgotPassword && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Password
+              </label>
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-zinc-400"
-            />
-          </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-zinc-400"
+              />
+            </div>
+          )}
+
+          {isLogin && !isForgotPassword && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(true);
+                  setMessage("");
+                }}
+                className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
+          )}
 
           {message && (
             <div className="rounded-xl bg-zinc-100 px-4 py-3 text-sm text-zinc-600">
@@ -156,6 +210,8 @@ export default function AuthPage() {
           >
             {isLoading
               ? "Please wait..."
+              : isForgotPassword
+              ? "Send reset link"
               : isLogin
               ? "Log in"
               : "Create account"}
@@ -163,18 +219,33 @@ export default function AuthPage() {
         </form>
 
         <div className="mt-6 text-center text-sm text-zinc-500">
-          {isLogin
-            ? "Don't have an account?"
-            : "Already have an account?"}{" "}
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setMessage("");
-            }}
-            className="font-medium text-zinc-900 hover:underline"
-          >
-            {isLogin ? "Sign up" : "Log in"}
-          </button>
+          {isForgotPassword ? (
+            <button
+              onClick={() => {
+                setIsForgotPassword(false);
+                setMessage("");
+              }}
+              className="font-medium text-zinc-900 hover:underline"
+            >
+              Back to login
+            </button>
+          ) : (
+            <>
+              {isLogin
+                ? "Don't have an account?"
+                : "Already have an account?"}{" "}
+
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setMessage("");
+                }}
+                className="font-medium text-zinc-900 hover:underline"
+              >
+                {isLogin ? "Sign up" : "Log in"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </main>
