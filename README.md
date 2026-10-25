@@ -1,54 +1,129 @@
-Wr1teHub
+# Wr1teHub
 
-Wr1teHub is an AI-powered writing platform designed to help users improve, analyze, and refine written content through AI-powered writing tools.
+AI-powered writing platform designed to help users improve, analyze, and refine their writing.
 
-Features
+Live Website: https://www.wr1tehub.com/
 
-- AI-powered text humanization
-- Writing analysis and AI detection
+Wr1teHub is a full-stack web application that combines AI-powered writing tools with user accounts, usage tracking, and subscription management. I designed and developed the platform from the ground up, working across product development, frontend and backend engineering, and payment integration.
+
+![Wr1teHub Homepage](public/images/homepage.png)
+
+## Overview
+
+Wr1teHub provides an interface for users to work with AI-powered writing tools while managing their usage through a subscription-based platform.
+
+The project gave me hands-on experience building and launching a product, connecting multiple services, and developing features across the full user journey.
+
+## Features
+
+- AI-powered writing tools
+- Text analysis and AI detection features
 - User authentication and account management
-- Subscription management with Stripe
-- Free and Pro plans
 - Usage tracking and monthly word limits
+- Free and Pro subscription plans
+- Stripe Checkout integration
+- Subscription management and cancellation
 - Password recovery
-- Subscription upgrades, cancellations, and customer portal
-- Responsive user interface
+- Responsive web interface
 
-Tech Stack
+## Product Screenshots
+
+### Writing Tool
+
+![Writing Tool](public/images/writing-tool.png)
+
+### Subscription Plans
+
+![Subscription Plans](public/images/pricing-plans.png)
+
+### Monthly Word Usage
+
+![Monthly Word Usage](public/images/monthly-usage.png)
+
+## Tech Stack
+
+### Frontend
 
 - Next.js
+- React
 - TypeScript
-- Supabase
-- OpenAI API
-- Stripe
 - Tailwind CSS
+
+### Backend and Data
+
+- Next.js server-side functionality
+- Supabase
+- Database-backed user and usage management
+
+### AI Integration
+
+- OpenAI API
+
+### Payments and Subscriptions
+
+- Stripe Checkout
+- Stripe subscription and webhook integration
+
+### Development and Deployment
+
+- Git
+- GitHub
 - Vercel
 
-Key Contributions
+## Key Contributions
 
-- Designed, developed, and deployed a full-stack AI writing platform.
-- Built authentication and user account management functionality.
-- Integrated Stripe Checkout and subscription management.
-- Implemented webhook handling to synchronize subscription status with user accounts.
-- Developed usage tracking and plan-based access controls.
-- Managed the product development lifecycle, from initial implementation to deployment and ongoing improvements.
+### Product Development
 
-Architecture
+- Built and launched an AI-powered writing platform from concept to deployment.
+- Developed features around writing workflows, account management, and subscription-based access.
+- Connected frontend experiences with backend services and external APIs.
 
-The application uses Next.js for its frontend and server-side API routes, Supabase for authentication and database functionality, OpenAI for AI-powered writing features, and Stripe for subscription billing.
+### Full-Stack Development
 
-Getting Started
+- Implemented application features using Next.js and TypeScript.
+- Integrated Supabase for backend and data-management functionality.
+- Connected the OpenAI API to power AI-related features.
+
+### Payments and Monetization
+
+- Integrated Stripe Checkout for subscription purchases.
+- Implemented subscription-related functionality, including webhook processing and subscription management.
+- Developed usage tracking to support monthly word limits and plan-based access.
+
+### User Experience
+
+- Organized the application around key writing workflows.
+- Built account and subscription experiences to support users throughout the product lifecycle.
+- Deployed the application publicly so users can access it online.
+
+## Architecture
+
+At a high level, Wr1teHub connects the user interface, application logic, database, AI services, and payment infrastructure.
+
+- Next.js and TypeScript power the application.
+- Supabase supports backend and data-management functionality.
+- The OpenAI API powers AI-related features.
+- Stripe supports checkout and subscription workflows.
+- Vercel hosts the deployed application.
+
+## Getting Started
+
+To run the project locally:
 
 1. Clone the repository.
-2. Install dependencies using npm install.
+2. Install dependencies.
 3. Configure the required environment variables.
-4. Start the development server using npm run dev.
-5. Open http://localhost:3000 in your browser.
+4. Start the development server.
 
-Environment Variables
+```bash
+npm install
+npm run dev
+```
 
-The application requires environment variables for Supabase, OpenAI, and Stripe integrations. Secret keys should be stored securely in environment configuration and must never be committed to the repository.
+Open `http://localhost:3000` in your browser.
 
-Project Status
+## Environment Variables
 
-Wr1teHub is an independently developed project that demonstrates full-stack development, AI integration, product development, authentication, and subscription-based billing.
+Configure the required environment variables locally before running the application.
+
+Use the variable names referenced in the project code and provide your own credentials
